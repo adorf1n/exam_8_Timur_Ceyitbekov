@@ -1,0 +1,28 @@
+﻿@model ForumTopic
+
+@{
+    ViewData["Title"] = "Тема: " + Model.Title;
+}
+
+<div class="container mt-5">
+    <h1>@Model.Title</h1>
+
+    <div class="mb-3">
+        <strong>Автор:</strong> @Model.User.UserName
+    </div>
+
+    <div class="mb-3">
+        <strong>Дата создания:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+    </div>
+
+    <div class="mb-4">
+        <strong>Описание:</strong>
+        <p>@Model.Description</p>
+    </div>
+
+    <hr>
+
+    <div class="text-center">
+        <a href="@Url.Action("Index", "Chat")" class="btn btn-secondary">Назад к темам</a>
+    </div>
+</div>
