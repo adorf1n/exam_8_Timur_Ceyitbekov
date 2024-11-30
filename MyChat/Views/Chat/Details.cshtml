@@ -3,6 +3,7 @@
 @{
     ViewData["Title"] = "Тема: " + Model.Title;
 }
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 
 <div class="container mt-5">
     <h1>@Model.Title</h1>
@@ -20,9 +21,94 @@
         <p>@Model.Description</p>
     </div>
 
+    @if (User.Identity.IsAuthenticated)
+    {
+        <form id="reply-form">
+            @Html.AntiForgeryToken()
+            <div class="form-group">
+                <label for="content">Ваш ответ:</label>
+                <textarea class="form-control" id="content" name="content" rows="3" required></textarea>
+
+            </div>
+            <button type="submit" class="btn btn-primary mt-2">Отправить</button>
+        </form>
+    }
+    else
+    {
+        <p>Чтобы ответить, нужно <a href="@Url.Action("Login", "Account")">войти в систему</a>.</p>
+    }
+    <hr>
+
+    <div>
+        <h3>Ответы:</h3>
+        <div id="replies-list">
+            @foreach (var reply in Model.Replies)
+            {
+                <div class="border p-3 mb-2">
+                    <strong>@reply.User.UserName</strong>
+                    <p>@reply.Content</p>
+                    <small>Дата ответа: @reply.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                </div>
+            }
+        </div>
+    </div>
+
+
     <hr>
 
     <div class="text-center">
         <a href="@Url.Action("Index", "Chat")" class="btn btn-secondary">Назад к темам</a>
     </div>
 </div>
+
+<script>
+    $(document).ready(function () {
+        $("#reply-form").submit(function (e) {
+            e.preventDefault();  
+
+
+
+            var content = $("#content").val();
+            var topicId = @Model.Id;  
+
+            var csrfToken = $('input[name="__RequestVerificationToken"]').val();
+
+            $.ajax({
+                url: '@Url.Action("AddReply", "Chat")',
+                type: 'POST',
+                data: {
+                    id: topicId,
+                    content: content,
+                    __RequestVerificationToken: csrfToken  
+                },
+                success: async function (data) {
+                    if (data.success) {
+                        $("#content").val('');
+
+                        var newReply = await data.replies[0]
+                        console.log(newReply)
+                        console.log(newReply)
+                        console.log(newReply)
+                        var newReplyHtml = `
+                            <div class="border p-3 mb-2">
+                                        <strong>${newReply.userName}</strong>
+                                        <p>${newReply.content}</p>
+                                        <small>Дата ответа: ${newReply.createdAt}</small>
+                            </div>
+                        `;
+                        
+                        $("#replies-list").prepend(newReplyHtml);
+                    } else {
+                        alert(data.message);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("Ошибка при отправке запроса:", status, error);
+                    alert("Произошла ошибка при добавлении ответа.");
+                }
+            });
+        });
+    });
+
+
+</script>

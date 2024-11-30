@@ -8,6 +8,7 @@ public class MyChatContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
     public DbSet<User> Users { get; set; }
     public DbSet<ForumTopic> ForumTopics { get; set; }
+    public DbSet<ForumReply> ForumReplies { get; set; }
 
     public MyChatContext(DbContextOptions<MyChatContext> options) : base(options) {}
 

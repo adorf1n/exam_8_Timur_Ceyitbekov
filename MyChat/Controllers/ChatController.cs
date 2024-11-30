@@ -66,18 +66,64 @@ public class ChatController : Controller
     public async Task<IActionResult> Details(int id)
     {
         var topic = await _context.ForumTopics
-            .Include(t => t.User)
+            .Include(t => t.User) 
+            .Include(t => t.Replies) 
+            .ThenInclude(r => r.User) 
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (topic == null)
         {
-            _logger.LogWarning($"Topic with ID {id} not found.");
             return NotFound();
         }
 
-        return View(topic);
+        return View(topic); 
     }
 
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddReply(int id, string content)
+    {
+        if (string.IsNullOrEmpty(content))
+        {
+            return Json(new { success = false, message = "Ответ не может быть пустым." });
+        }
+
+        try
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            var reply = new ForumReply
+            {
+                Content = content,
+                CreatedAt = DateTime.UtcNow, 
+                ForumTopicId = id,
+                UserId = user.Id
+            };
+
+            _context.ForumReplies.Add(reply);
+            await _context.SaveChangesAsync();
+
+            var replies = await _context.ForumReplies
+                .Where(r => r.ForumTopicId == id)
+                .Include(r => r.User)
+                .ToListAsync();
+
+            var replyData = replies.Select(r => new
+            {
+                r.Id,
+                r.Content,
+                CreatedAt = r.CreatedAt.ToString("dd.MM.yyyy HH:mm"),
+                UserName = r.User.UserName
+            }).ToList();
+
+            return Json(new { success = true, replies = replyData });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = "Произошла ошибка при добавлении ответа: " + ex.Message });
+        }
+    }
 
 
 }
