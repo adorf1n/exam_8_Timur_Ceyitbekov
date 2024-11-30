@@ -63,12 +63,12 @@ public class ChatController : Controller
     }
 
     [Route("Chat/Details/{id}")]
-    public async Task<IActionResult> Details(int id)
+    public async Task<IActionResult> Details(int id, int page = 1)
     {
+        const int pageSize = 5; 
+
         var topic = await _context.ForumTopics
-            .Include(t => t.User) 
-            .Include(t => t.Replies) 
-            .ThenInclude(r => r.User) 
+            .Include(t => t.User)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (topic == null)
@@ -76,7 +76,26 @@ public class ChatController : Controller
             return NotFound();
         }
 
-        return View(topic); 
+        var repliesQuery = _context.ForumReplies
+            .Where(r => r.ForumTopicId == id)
+            .Include(r => r.User)
+            .OrderBy(r => r.CreatedAt);
+
+        var totalReplies = await repliesQuery.CountAsync(); 
+        var replies = await repliesQuery
+            .Skip((page - 1) * pageSize) 
+            .Take(pageSize) 
+            .ToListAsync();
+
+        var viewModel = new TopicDetailsViewModel
+        {
+            Topic = topic,
+            Replies = replies,
+            CurrentPage = page,
+            TotalPages = (int)Math.Ceiling((double)totalReplies / pageSize) 
+        };
+
+        return View(viewModel);
     }
 
 
